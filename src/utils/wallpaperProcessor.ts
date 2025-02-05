@@ -49,8 +49,8 @@ export class WallpaperProcessor {
                 created_at: stats.birthtime.toISOString(),
                 tags: [], // You can implement automatic tagging later
                 colors: [`#${dominant.r.toString(16)}${dominant.g.toString(16)}${dominant.b.toString(16)}`],
-                preview_url: `/previews/${previewName}`,
-                download_url: `/wallpapers/${fileName}`,
+                preview_url: `http://localhost:3001/previews/${previewName}`,
+                download_url: `http://localhost:3001/wallpapers/${fileName}`,
             };
 
             return wallpaper;
