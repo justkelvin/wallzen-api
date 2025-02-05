@@ -1,6 +1,7 @@
 import sharp from 'sharp';
 import path from 'path';
-import fs from 'fs-extra';
+// import fs from 'fs-extra';
+import * as fs from 'fs-extra';
 import { config } from '../config';
 import { Wallpaper } from '../types/wallpaper';
 import crypto from 'crypto';
@@ -51,6 +52,9 @@ export class WallpaperProcessor {
                 colors: [`#${dominant.r.toString(16)}${dominant.g.toString(16)}${dominant.b.toString(16)}`],
                 preview_url: `http://localhost:3001/previews/${previewName}`,
                 download_url: `http://localhost:3001/wallpapers/${fileName}`,
+                views: 0,
+                downloads: 0,
+                favorites: 0,
             };
 
             return wallpaper;
