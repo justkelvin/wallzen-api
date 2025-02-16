@@ -11,7 +11,12 @@ import {
     healthCheck,
     getStatus
 } from '../controllers/wallpaperController';
-import { apiLimiter, downloadLimiter } from '../middleware/rateLimitter';
+import {
+    apiLimiter,
+    downloadLimiter,
+    searchLimiter,
+    healthLimiter
+} from '../middleware/rateLimitter';
 
 const router = express.Router();
 
@@ -19,15 +24,15 @@ const router = express.Router();
 router.use(apiLimiter);
 
 // Server status
-router.get('/status', getStatus);
+router.get('/status', healthLimiter, getStatus);
 
 // Health check
-router.get('/health', healthCheck);
+router.get('/health', healthLimiter, healthCheck);
 
 // Discovery features
 router.get('/wallpapers/random', getRandomWallpapers);
-router.get('/wallpapers/search', searchWallpapers);
-router.get('/wallpapers/filter', filterWallpapers);
+router.get('/wallpapers/search', searchLimiter, searchWallpapers);
+router.get('/wallpapers/filter', searchLimiter, filterWallpapers);
 router.get('/wallpapers/popular', getPopularWallpapers);
 
 // Core endpoints
