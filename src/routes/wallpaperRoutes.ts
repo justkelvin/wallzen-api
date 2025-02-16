@@ -9,11 +9,14 @@ import {
     getPreview,
     getPopularWallpapers,
     healthCheck,
-    downloadLimiter,
     getStatus
 } from '../controllers/wallpaperController';
+import { apiLimiter, downloadLimiter } from '../middleware/rateLimitter';
 
 const router = express.Router();
+
+// Apply API rate limiter to all routes
+router.use(apiLimiter);
 
 // Server status
 router.get('/status', getStatus);
