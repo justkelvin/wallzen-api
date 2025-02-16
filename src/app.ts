@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import wallpaperRoutes from './routes/wallpaperRoutes';
+import { rateLimitTracker } from './middleware/rateLimitTracker';
 import { config } from './config';
 import { DatabaseService } from './services/database.services';
 
@@ -14,36 +15,44 @@ const dbService = new DatabaseService();
 
 // Configure CORS to allow requests from frontend
 app.use(cors({
-    origin: 'http://localhost:3000',
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type']
 }));
 
 app.use(express.json());
 
+// Add rate limit tracker
+app.use(rateLimitTracker);
+
+// Static file serving
+app.use('/previews', express.static(config.previewsDir));
+app.use('/wallpapers', express.static(config.wallpaperDir));
+
+// API routes
+app.use('/api', wallpaperRoutes);
+
+// Error handling
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error(err.stack);
+    res.status(err.status || 500).json({
+        error: err.message || 'Internal Server Error',
+        timestamp: new Date().toISOString()
+    });
+});
+
+// 404 handler
+app.use((req, res) => {
+    res.status(404).json({
+        error: 'Not Found',
+        timestamp: new Date().toISOString()
+    });
+});
+
 // Initialize database connection
 async function initializeApp() {
     try {
         await dbService.connect();
-
-        // Ensure directories exist
-        app.use('/previews', (req, res, next) => {
-            console.log('Preview request:', req.url);
-            next();
-        }, express.static(config.previewsDir));
-
-        app.use('/wallpapers', (req, res, next) => {
-            console.log('Wallpaper request:', req.url);
-            next();
-        }, express.static(config.wallpaperDir));
-
-        app.use('/api', wallpaperRoutes);
-
-        // Add error handling
-        app.use((req, res) => {
-            console.log('404 for:', req.url);
-            res.status(404).json({ error: 'Not found' });
-        });
 
         // Start server after database connection is established
         app.listen(port, () => {
