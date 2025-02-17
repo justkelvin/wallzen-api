@@ -3,16 +3,12 @@ name: Backend CI
 on:
   push:
     branches: [ main, develop ]
-    paths:
-      - 'backend/**'
   pull_request:
     branches: [ main, develop ]
-    paths:
-      - 'backend/**'
+  workflow_dispatch:
 
 jobs:
-  test:
-    name: Test & Build Backend
+  test-and-build:
     runs-on: ubuntu-latest
 
     services:
@@ -38,47 +34,42 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          cache-dependency-path: backend/package-lock.json
 
       - name: Install Dependencies
-        working-directory: backend
         run: npm ci
 
       - name: Run Linting
-        working-directory: backend
         run: npm run lint
 
       - name: Generate Prisma Client
-        working-directory: backend
         run: npx prisma generate
 
       - name: Run Migrations
-        working-directory: backend
         run: npx prisma migrate deploy
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/wallzen_test
 
       - name: Run Tests
-        working-directory: backend
         run: npm test
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/wallzen_test
           NODE_ENV: test
 
       - name: Build Application
-        working-directory: backend
         run: npm run build
 
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v3
         with:
           name: backend-build
-          path: backend/dist
+          path: dist
+          retention-days: 7
 
-  create-release:
-    needs: test
+  release:
+    needs: test-and-build
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    
     steps:
       - uses: actions/checkout@v3
 
@@ -86,22 +77,28 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: backend-build
-          path: backend/dist
+          path: dist
+
+      - name: Get Current Date
+        id: date
+        run: echo "date=$(date +'%Y-%m-%d %H:%M:%S')" >> $GITHUB_OUTPUT
 
       - name: Create Release
-        id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: backend-v${{ github.run_number }}
+          tag_name: v${{ github.run_number }}
           release_name: Backend Release v${{ github.run_number }}
           body: |
-            Backend Release v${{ github.run_number }}
+            🚀 Backend Release v${{ github.run_number }}
             
-            Changes in this release:
+            📅 Release Date: ${{ steps.date.outputs.date }}
+            👤 Released by: ${{ github.actor }}
+            
+            📝 Changes:
             ${{ github.event.head_commit.message }}
             
-            Build Date: ${{ env.DATE }}
+            🔗 Commit: ${{ github.sha }}
           draft: false
           prerelease: false
