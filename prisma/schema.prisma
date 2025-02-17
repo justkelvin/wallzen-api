@@ -1,0 +1,53 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["metrics"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Wallpaper {
+  id          String   @id @default(uuid())
+  publicId    String   @unique @map("public_id")
+  name        String
+  width       Int
+  height      Int
+  format      String
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  tags        Tag[]    
+  colors      Color[]  
+  previewUrl  String   @map("preview_url")
+  downloadUrl String   @map("download_url")
+  views       Int      @default(0)
+  downloads   Int      @default(0)
+  favorites   Int      @default(0)
+
+  @@map("wallpapers")
+}
+
+model Tag {
+  id         String      @id @default(uuid())
+  name       String      @unique
+  wallpapers Wallpaper[]
+  createdAt  DateTime    @default(now()) @map("created_at")
+
+  @@map("tags")
+}
+
+model Color {
+  id         String      @id @default(uuid())
+  hex        String      @unique
+  wallpapers Wallpaper[]
+  createdAt  DateTime    @default(now()) @map("created_at")
+
+  @@map("colors")
+}
