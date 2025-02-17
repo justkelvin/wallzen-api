@@ -1,4 +1,4 @@
-name: Backend CI/CD
+name: Backend CI
 
 on:
   push:
@@ -12,7 +12,7 @@ on:
 
 jobs:
   test:
-    name: Test Backend
+    name: Test & Build Backend
     runs-on: ubuntu-latest
 
     services:
@@ -64,36 +64,44 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/wallzen_test
           NODE_ENV: test
-          JWT_SECRET: test_secret
-
-  deploy:
-    name: Deploy Backend
-    needs: test
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-
-      - name: Install Dependencies
-        working-directory: backend
-        run: npm ci
 
       - name: Build Application
         working-directory: backend
         run: npm run build
 
-      # Add your deployment steps here
-      # Example for Railway deployment:
-      - name: Deploy to Railway
-        working-directory: backend
-        run: |
-          npm install -g @railway/cli
-          railway up
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: backend-build
+          path: backend/dist
+
+  create-release:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: backend-build
+          path: backend/dist
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
         env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: backend-v${{ github.run_number }}
+          release_name: Backend Release v${{ github.run_number }}
+          body: |
+            Backend Release v${{ github.run_number }}
+            
+            Changes in this release:
+            ${{ github.event.head_commit.message }}
+            
+            Build Date: ${{ env.DATE }}
+          draft: false
+          prerelease: false
